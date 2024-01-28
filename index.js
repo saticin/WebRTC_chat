@@ -12,25 +12,45 @@ const io = require("socket.io")(server, {
 
 app.use(cors());
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
 
 app.get("/", (req, res) => {
   res.send("server is running ...");
 });
 
 io.on("connection", (socket) => {
-  
   socket.emit("me", socket.id);
   socket.on("disconnect", () => {
     socket.broadcast.emit("cancellended");
   });
-  socket.on("calluser", ({ userToCall, signalData, from, name }) => {
-     
-    io.to(userToCall).emit("calluser", { signal: signalData, from, name });
-  });
+
+  socket.on(
+    "calluser",
+    ({ userToCall, signalData, from, dialerEmail, name }) => {
+      io.to(userToCall).emit("calluser", {
+        signal: signalData,
+        from,
+        dialerEmail,
+        name,
+      });
+    }
+  );
   socket.on("answerCall", (data) => {
-    
-    io.to(data.to).emit("callAccepted", data.signal);
+    // console.log("From answerCall :", data.to);
+    io.to(data.to).emit("callAccepted", data);
+  });
+  socket.on("dialeremailadd", (fromEmail) => {
+    // console.log("From email recieved", fromEmail);
+  });
+  socket.on("message", ({ sender, message, identification, reciever, me }) => {
+    // console.log("User message", {
+    //   sender,
+    //   message,
+    //   identification,
+    //   reciever,
+    //   me,
+    // });
+    io.to(reciever).emit("messageToReciever", { sender, message });
   });
 });
 
